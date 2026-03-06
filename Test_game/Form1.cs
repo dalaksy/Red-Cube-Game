@@ -261,7 +261,7 @@ namespace Test_game
                 if (new RectangleF(playerPos.X, playerPos.Y, PlayerSize, PlayerSize).IntersectsWith(room.Items[i]))
                 {
                     room.Items.RemoveAt(i);
-                    room.ItemTextureIndices.RemoveAt(i); // Удаляем индекс текстуры вместе с предметом
+                    room.ItemTextureIndices.RemoveAt(i);
                     collectedCount++;
                 }
         }
@@ -315,8 +315,6 @@ namespace Test_game
         private void DrawRoom(Graphics g, Room r, int ox, int oy)
         {
             foreach (var w in r.Walls) g.FillRectangle(Brushes.Black, ox + w.X, oy + w.Y, w.Width, w.Height);
-
-            // ОТРИСОВКА СФЕР (ПРЕДМЕТОВ) С ТЕКСТУРАМИ
             for (int i = 0; i < r.Items.Count; i++)
             {
                 int texIdx = r.ItemTextureIndices[i];
@@ -347,7 +345,7 @@ namespace Test_game
     public class Room
     {
         public List<Rectangle> Walls = new List<Rectangle>(), Items = new List<Rectangle>();
-        public List<int> ItemTextureIndices = new List<int>(); // Хранение индексов текстур сфер
+        public List<int> ItemTextureIndices = new List<int>();
         public List<PointF> Enemies = new List<PointF>(), NPCs = new List<PointF>();
         public List<string> EnemyDirs = new List<string>();
         public List<int> EnemyAI_Timers = new List<int>();
