@@ -31,7 +31,8 @@ namespace Test_game
         private System.Windows.Forms.Timer gameTimer = new System.Windows.Forms.Timer();
         private int collectedCount = 0;
         private const int totalItems = 8;
-        private bool showInfoWindow = false; // Состояние окна инфо
+        private bool showInfoWindow = false;
+        private bool showMapView = false;
 
         private Button btnRetry = new Button();
         private Button btnExit = new Button();
@@ -51,7 +52,11 @@ namespace Test_game
             this.KeyDown += (s, e) => {
                 if (e.KeyCode == Keys.E) Application.Exit();
                 if (e.KeyCode == Keys.R) StartNewGame();
-                if (e.KeyCode == Keys.F) showInfoWindow = !showInfoWindow; // Переключение инфо
+                if (e.KeyCode == Keys.I) showInfoWindow = !showInfoWindow;
+
+                // ИСПРАВЛЕНИЕ: F работает только во время игры (Playing)
+                if (e.KeyCode == Keys.F && currentState == GameState.Playing) ToggleMapView();
+
                 if (e.KeyCode == Keys.C) PickColor("player");
                 if (e.KeyCode == Keys.V) PickColor("enemy");
                 if (e.KeyCode == Keys.B) PickColor("item");
@@ -60,6 +65,21 @@ namespace Test_game
             this.KeyUp += (s, e) => { pressedKeys.Remove(e.KeyCode); };
 
             StartNewGame();
+        }
+
+        private void ToggleMapView()
+        {
+            showMapView = !showMapView;
+            if (showMapView)
+            {
+                this.ClientSize = new Size(Screen.PrimaryScreen!.Bounds.Width, Screen.PrimaryScreen.Bounds.Height);
+                this.Location = new Point(0, 0);
+            }
+            else
+            {
+                this.ClientSize = new Size(WinW, WinH);
+                this.CenterToScreen();
+            }
         }
 
         private void PickColor(string target)
@@ -81,14 +101,12 @@ namespace Test_game
             btnRetry.Text = "Restart";
             btnRetry.Font = new Font("Arial", 12);
             btnRetry.Size = new Size(140, 45);
-            btnRetry.Location = new Point(WinW / 2 - 150, WinH / 2 + 60);
             btnRetry.Visible = false;
             btnRetry.Click += (s, e) => StartNewGame();
 
             btnExit.Text = "Exit";
             btnExit.Font = new Font("Arial", 12);
             btnExit.Size = new Size(140, 45);
-            btnExit.Location = new Point(WinW / 2 + 10, WinH / 2 + 60);
             btnExit.Visible = false;
             btnExit.Click += (s, e) => Application.Exit();
 
@@ -118,61 +136,35 @@ namespace Test_game
 
             int cT = 120, cB = 300, vL = 250, vR = 550, pW = 300, gT = 200, gB = 400;
 
-            world[0, 0].Walls.Add(new Rectangle(0, 0, WinW, cT));
-            world[0, 0].Walls.Add(new Rectangle(0, 0, 60, WinH));
-            world[0, 0].Walls.Add(new Rectangle(pW, cB, WinW - pW, WinH - cB));
-            world[0, 0].Items.Add(new Rectangle(120, 180, ItemSize, ItemSize));
-            world[0, 0].Enemies.Add(new PointF(200, 200));
+            // Расстановка всех 9 секторов (S1-S9)
+            world[0, 0].Walls.Add(new Rectangle(0, 0, WinW, cT)); world[0, 0].Walls.Add(new Rectangle(0, 0, 60, WinH)); world[0, 0].Walls.Add(new Rectangle(pW, cB, WinW - pW, WinH - cB));
+            world[0, 0].Items.Add(new Rectangle(120, 180, ItemSize, ItemSize)); world[0, 0].Enemies.Add(new PointF(200, 200));
 
-            world[1, 0].Walls.Add(new Rectangle(0, 0, WinW, cT));
-            world[1, 0].Walls.Add(new Rectangle(0, cB, vL, WinH - cB));
-            world[1, 0].Walls.Add(new Rectangle(vR, cB, WinW - vR, WinH - cB));
-            world[1, 0].Items.Add(new Rectangle(WinW / 2 - ItemSize / 2, cT + 20, ItemSize, ItemSize));
-            world[1, 0].Enemies.Add(new PointF(WinW / 2 + 100, cT + 80));
+            world[1, 0].Walls.Add(new Rectangle(0, 0, WinW, cT)); world[1, 0].Walls.Add(new Rectangle(0, cB, vL, WinH - cB)); world[1, 0].Walls.Add(new Rectangle(vR, cB, WinW - vR, WinH - cB));
+            world[1, 0].Items.Add(new Rectangle(WinW / 2 - ItemSize / 2, cT + 20, ItemSize, ItemSize)); world[1, 0].Enemies.Add(new PointF(WinW / 2 + 100, cT + 80));
 
-            world[2, 0].Walls.Add(new Rectangle(0, 0, WinW, cT));
-            world[2, 0].Walls.Add(new Rectangle(WinW - 60, 0, 60, WinH));
-            world[2, 0].Walls.Add(new Rectangle(0, cB, 500, WinH - cB));
-            world[2, 0].Items.Add(new Rectangle(WinW - 150, 180, ItemSize, ItemSize));
-            world[2, 0].Enemies.Add(new PointF(WinW - 240, 200));
+            world[2, 0].Walls.Add(new Rectangle(0, 0, WinW, cT)); world[2, 0].Walls.Add(new Rectangle(WinW - 60, 0, 60, WinH)); world[2, 0].Walls.Add(new Rectangle(0, cB, 500, WinH - cB));
+            world[2, 0].Items.Add(new Rectangle(WinW - 150, 180, ItemSize, ItemSize)); world[2, 0].Enemies.Add(new PointF(WinW - 240, 200));
 
-            world[0, 1].Walls.Add(new Rectangle(0, 0, 60, WinH));
-            world[0, 1].Walls.Add(new Rectangle(pW, 0, WinW - pW, gT));
-            world[0, 1].Walls.Add(new Rectangle(pW, gB, WinW - pW, WinH - gB));
-            world[0, 1].Items.Add(new Rectangle(120, WinH / 2, ItemSize, ItemSize));
-            world[0, 1].Enemies.Add(new PointF(400, WinH / 2));
+            world[0, 1].Walls.Add(new Rectangle(0, 0, 60, WinH)); world[0, 1].Walls.Add(new Rectangle(pW, 0, WinW - pW, gT)); world[0, 1].Walls.Add(new Rectangle(pW, gB, WinW - pW, WinH - gB));
+            world[0, 1].Items.Add(new Rectangle(120, WinH / 2, ItemSize, ItemSize)); world[0, 1].Enemies.Add(new PointF(400, WinH / 2));
 
-            world[1, 1].Walls.Add(new Rectangle(0, 0, vL, gT));
-            world[1, 1].Walls.Add(new Rectangle(vR, 0, WinW - vR, gT));
-            world[1, 1].Walls.Add(new Rectangle(0, gB, vL, WinH - gB));
-            world[1, 1].Walls.Add(new Rectangle(vR, gB, WinW - vR, WinH - gB));
+            world[1, 1].Walls.Add(new Rectangle(0, 0, vL, gT)); world[1, 1].Walls.Add(new Rectangle(vR, 0, WinW - vR, gT)); world[1, 1].Walls.Add(new Rectangle(0, gB, vL, WinH - gB)); world[1, 1].Walls.Add(new Rectangle(vR, gB, WinW - vR, WinH - gB));
 
-            world[2, 1].Walls.Add(new Rectangle(WinW - 60, 0, 60, WinH));
-            world[2, 1].Walls.Add(new Rectangle(0, 0, 500, gT));
-            world[2, 1].Walls.Add(new Rectangle(0, gB, 500, WinH - gB));
-            world[2, 1].Items.Add(new Rectangle(WinW - 200, WinH / 2, ItemSize, ItemSize));
-            world[2, 1].Enemies.Add(new PointF(WinW - 450, WinH / 2));
+            world[2, 1].Walls.Add(new Rectangle(WinW - 60, 0, 60, WinH)); world[2, 1].Walls.Add(new Rectangle(0, 0, 500, gT)); world[2, 1].Walls.Add(new Rectangle(0, gB, 500, WinH - gB));
+            world[2, 1].Items.Add(new Rectangle(WinW - 200, WinH / 2, ItemSize, ItemSize)); world[2, 1].Enemies.Add(new PointF(WinW - 450, WinH / 2));
 
-            world[0, 2].Walls.Add(new Rectangle(0, WinH - cT, WinW, cT));
-            world[0, 2].Walls.Add(new Rectangle(0, 0, 60, WinH));
-            world[0, 2].Walls.Add(new Rectangle(pW, 0, WinW - pW, cB));
-            world[0, 2].Items.Add(new Rectangle(120, WinH - 200, ItemSize, ItemSize));
-            world[0, 2].Enemies.Add(new PointF(200, WinH - 250));
+            world[0, 2].Walls.Add(new Rectangle(0, WinH - cT, WinW, cT)); world[0, 2].Walls.Add(new Rectangle(0, 0, 60, WinH)); world[0, 2].Walls.Add(new Rectangle(pW, 0, WinW - pW, cB));
+            world[0, 2].Items.Add(new Rectangle(120, WinH - 200, ItemSize, ItemSize)); world[0, 2].Enemies.Add(new PointF(200, WinH - 250));
 
-            world[1, 2].Walls.Add(new Rectangle(0, WinH - cT, WinW, cT));
-            world[1, 2].Walls.Add(new Rectangle(0, 0, vL, cB));
-            world[1, 2].Walls.Add(new Rectangle(vR, 0, WinW - vR, cB));
-            world[1, 2].Items.Add(new Rectangle(WinW / 2 - ItemSize / 2, WinH - 200, ItemSize, ItemSize));
-            world[1, 2].Enemies.Add(new PointF(WinW / 2 - 150, WinH - 250));
+            world[1, 2].Walls.Add(new Rectangle(0, WinH - cT, WinW, cT)); world[1, 2].Walls.Add(new Rectangle(0, 0, vL, cB)); world[1, 2].Walls.Add(new Rectangle(vR, 0, WinW - vR, cB));
+            world[1, 2].Items.Add(new Rectangle(WinW / 2 - ItemSize / 2, WinH - 200, ItemSize, ItemSize)); world[1, 2].Enemies.Add(new PointF(WinW / 2 - 150, WinH - 250));
 
-            world[2, 2].Walls.Add(new Rectangle(0, WinH - cT, WinW, cT));
-            world[2, 2].Walls.Add(new Rectangle(WinW - 60, 0, 60, WinH));
-            world[2, 2].Walls.Add(new Rectangle(0, 0, 500, cB));
-            world[2, 2].Items.Add(new Rectangle(WinW - 150, WinH - 200, ItemSize, ItemSize));
-            world[2, 2].Enemies.Add(new PointF(WinW - 240, WinH - 250));
+            world[2, 2].Walls.Add(new Rectangle(0, WinH - cT, WinW, cT)); world[2, 2].Walls.Add(new Rectangle(WinW - 60, 0, 60, WinH)); world[2, 2].Walls.Add(new Rectangle(0, 0, 500, cB));
+            world[2, 2].Items.Add(new Rectangle(WinW - 150, WinH - 200, ItemSize, ItemSize)); world[2, 2].Enemies.Add(new PointF(WinW - 240, WinH - 250));
         }
 
-        private void GameLoop(object sender, EventArgs e)
+        private void GameLoop(object? sender, EventArgs e)
         {
             if (currentState != GameState.Playing) return;
             float nX = playerPos.X, nY = playerPos.Y;
@@ -184,6 +176,21 @@ namespace Test_game
             if (!IsBoxColliding(nX, playerPos.Y, PlayerSize, PlayerSize)) playerPos.X = nX;
             if (!IsBoxColliding(playerPos.X, nY, PlayerSize, PlayerSize)) playerPos.Y = nY;
 
+            if (playerPos.X > WinW && worldX < 2) { worldX++; playerPos.X -= WinW; }
+            else if (playerPos.X < 0 && worldX > 0) { worldX--; playerPos.X += WinW; }
+            if (playerPos.Y > WinH && worldY < 2) { worldY++; playerPos.Y -= WinH; }
+            else if (playerPos.Y < 0 && worldY > 0) { worldY--; playerPos.Y += WinH; }
+
+            playerPos.X = Math.Clamp(playerPos.X, worldX == 0 ? 0 : -50, worldX == 2 ? WinW - PlayerSize : WinW + 50);
+            playerPos.Y = Math.Clamp(playerPos.Y, worldY == 0 ? 0 : -50, worldY == 2 ? WinH - PlayerSize : WinH + 50);
+
+            UpdateEnemies();
+            CheckItemCollisions();
+            this.Invalidate();
+        }
+
+        private void UpdateEnemies()
+        {
             var room = world[worldX, worldY];
             for (int i = 0; i < room.Enemies.Count; i++)
             {
@@ -200,20 +207,17 @@ namespace Test_game
                 if (new RectangleF(playerPos.X, playerPos.Y, PlayerSize, PlayerSize).IntersectsWith(new RectangleF(eP.X, eP.Y, EnemySize, EnemySize)))
                     GameOver(GameState.Lost);
             }
+        }
 
-            float cx = playerPos.X + PlayerSize / 2, cy = playerPos.Y + PlayerSize / 2;
-            if (cx > WinW && worldX < 2) { worldX++; playerPos.X = 25; }
-            else if (cx < 0 && worldX > 0) { worldX--; playerPos.X = WinW - PlayerSize - 25; }
-            else if (cy > WinH && worldY < 2) { worldY++; playerPos.Y = 25; }
-            else if (cy < 0 && worldY > 0) { worldY--; playerPos.Y = WinH - PlayerSize - 25; }
-
+        private void CheckItemCollisions()
+        {
+            var room = world[worldX, worldY];
             for (int i = room.Items.Count - 1; i >= 0; i--)
                 if (new RectangleF(playerPos.X, playerPos.Y, PlayerSize, PlayerSize).IntersectsWith(new RectangleF(room.Items[i].X, room.Items[i].Y, ItemSize, ItemSize)))
                 {
                     room.Items.RemoveAt(i); collectedCount++;
                     if (collectedCount >= totalItems) GameOver(GameState.Won);
                 }
-            this.Invalidate();
         }
 
         private bool IsBoxColliding(float x, float y, float w, float h)
@@ -226,6 +230,8 @@ namespace Test_game
         private void GameOver(GameState state)
         {
             gameTimer.Stop(); currentState = state;
+            btnRetry.Location = new Point(this.ClientSize.Width / 2 - 150, this.ClientSize.Height / 2 + 60);
+            btnExit.Location = new Point(this.ClientSize.Width / 2 + 10, this.ClientSize.Height / 2 + 60);
             btnRetry.Visible = btnExit.Visible = true;
             this.Invalidate();
         }
@@ -233,32 +239,57 @@ namespace Test_game
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics; g.Clear(Color.FromArgb(30, 30, 30));
+
+            float gPX = worldX * WinW + playerPos.X;
+            float gPY = worldY * WinH + playerPos.Y;
+
+            if (showMapView)
+            {
+                // Камера в полноэкранном режиме
+                float camX = gPX - this.ClientSize.Width / 2;
+                float camY = gPY - this.ClientSize.Height / 2;
+                camX = Math.Clamp(camX, 0, WinW * 3 - this.ClientSize.Width);
+                camY = Math.Clamp(camY, 0, WinH * 3 - this.ClientSize.Height);
+                g.TranslateTransform(-camX, -camY);
+                for (int y = 0; y < 3; y++)
+                    for (int x = 0; x < 3; x++)
+                        DrawRoom(g, world[x, y], x * WinW, y * WinH);
+                using (SolidBrush pb = new SolidBrush(pColor)) g.FillRectangle(pb, gPX, gPY, PlayerSize, PlayerSize);
+                g.ResetTransform();
+            }
+            else
+            {
+                DrawRoom(g, world[worldX, worldY], 0, 0);
+                using (SolidBrush pb = new SolidBrush(pColor)) g.FillRectangle(pb, playerPos.X, playerPos.Y, PlayerSize, PlayerSize);
+            }
+
             if (currentState == GameState.Playing)
             {
-                var r = world[worldX, worldY];
-                foreach (var w in r.Walls) g.FillRectangle(Brushes.Black, w);
-                using (SolidBrush ib = new SolidBrush(iColor)) foreach (var it in r.Items) g.FillRectangle(ib, it.X, it.Y, ItemSize, ItemSize);
-                using (SolidBrush eb = new SolidBrush(eColor)) foreach (var en in r.Enemies) g.FillRectangle(eb, en.X, en.Y, EnemySize, EnemySize);
-                using (SolidBrush pb = new SolidBrush(pColor)) g.FillRectangle(pb, playerPos.X, playerPos.Y, PlayerSize, PlayerSize);
-
-                // Основной HUD
-                g.DrawString($"Collected: {collectedCount}/{totalItems} | Sector: {(worldY * 3 + worldX + 1)}", new Font("Arial", 10, FontStyle.Bold), Brushes.White, 10, 10);
-                g.DrawString("Press [F] for Info", new Font("Arial", 9), Brushes.LightGray, 10, 25);
-
-                // Окно информации
+                g.DrawString($"Collected: {collectedCount}/{totalItems} | Sector: {(worldY * 3 + worldX + 1)}", new Font("Arial", 12, FontStyle.Bold), Brushes.White, 10, 10);
+                g.DrawString("Press [I] for Info | [F] for Map", new Font("Arial", 10), Brushes.LightGray, 10, 30);
                 if (showInfoWindow)
                 {
-                    g.FillRectangle(new SolidBrush(Color.FromArgb(200, 0, 0, 0)), 200, 150, 400, 300);
-                    g.DrawRectangle(Pens.White, 200, 150, 400, 300);
-                    string infoText = "GAME CONTROLS\n\nWASD - Move Cube\nE - Exit Game\nR - Restart Level\nF - Close Info\n\nCOLORS:\nC - Change Player Color\nV - Change Enemy Color\nB - Change Item Color";
-                    g.DrawString(infoText, new Font("Consolas", 12, FontStyle.Bold), Brushes.White, 220, 170);
+                    int cX = this.ClientSize.Width / 2, cY = this.ClientSize.Height / 2;
+                    g.FillRectangle(new SolidBrush(Color.FromArgb(220, 0, 0, 0)), cX - 200, cY - 150, 400, 300);
+                    g.DrawString("CONTROLS\n\nWASD - Move\nE - Exit\nR - Restart\nI - Close Info\nF - Toggle Map\n\nCOLORS:\nC - Player\nV - Enemy\nB - Item", new Font("Consolas", 12, FontStyle.Bold), Brushes.White, cX - 180, cY - 130);
                 }
             }
             else
             {
+                // Черный фон для экрана смерти
+                g.FillRectangle(new SolidBrush(Color.FromArgb(180, 0, 0, 0)), 0, 0, this.ClientSize.Width, this.ClientSize.Height);
                 string m = currentState == GameState.Won ? "VICTORY!" : "DEFEAT";
-                g.DrawString(m, new Font("Arial", 45, FontStyle.Bold), currentState == GameState.Won ? Brushes.Gold : Brushes.Red, WinW / 2 - 180, WinH / 2 - 60);
+                g.DrawString(m, new Font("Arial", 45, FontStyle.Bold), currentState == GameState.Won ? Brushes.Gold : Brushes.Red, this.ClientSize.Width / 2 - 130, this.ClientSize.Height / 2 - 60);
             }
+        }
+
+        private void DrawRoom(Graphics g, Room r, int ox, int oy)
+        {
+            foreach (var w in r.Walls) g.FillRectangle(Brushes.Black, ox + w.X, oy + w.Y, w.Width, w.Height);
+            using (SolidBrush ib = new SolidBrush(iColor)) foreach (var it in r.Items) g.FillRectangle(ib, ox + it.X, oy + it.Y, ItemSize, ItemSize);
+            using (SolidBrush eb = new SolidBrush(eColor)) foreach (var en in r.Enemies) g.FillRectangle(eb, ox + en.X, oy + en.Y, EnemySize, EnemySize);
+            using (Pen p = new Pen(Color.FromArgb(60, Color.White), 2) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash })
+                g.DrawRectangle(p, ox, oy, WinW, WinH);
         }
     }
 
