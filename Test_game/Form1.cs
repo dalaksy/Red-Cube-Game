@@ -15,13 +15,19 @@ namespace Test_game
         private const int EnemySize = 42;
         private const int PlayerSize = 32;
         private const int ItemSize = 18;
-        private const int PlayerSpeed = 6;
-        private const float EnemySpeed = 3.0f;
 
-        private readonly Color pColor = Color.Crimson;
-        private readonly Color eColor = Color.RoyalBlue;
-        private readonly Color iColor = Color.ForestGreen;
-        private readonly Color nColor = Color.Orange;
+        // Скорости теперь переменные для возможности настройки
+        private float PlayerSpeed = 6.0f;
+        private float EnemySpeed = 3.6f;
+
+        // Временные переменные для меню настроек
+        private float tempP = 6.0f;
+        private float tempE = 3.6f;
+
+        private Color pColor = Color.Crimson;
+        private Color eColor = Color.RoyalBlue;
+        private Color iColor = Color.ForestGreen;
+        private Color nColor = Color.Orange;
 
         private enum GameState { Playing, Won, Lost }
         private GameState currentState;
@@ -34,13 +40,15 @@ namespace Test_game
         private const int totalItems = 8;
         private bool showInfoWindow = false;
         private bool showMapView = false;
+        private bool showSettingsWindow = false;
+
         private bool isQuestAccepted = false;
         private bool showDialogue = false;
 
         private SpriteManager mcSprites = new SpriteManager();
         private SpriteManager npcSprites = new SpriteManager();
         private SpriteManager[] enemyTypeSprites = new SpriteManager[3];
-        private List<Image> itemTextures = new List<Image>(); // Список текстур для сфер
+        private List<Image> itemTextures = new List<Image>();
 
         private string playerFacing = "down";
         private bool isMoving = false;
@@ -72,22 +80,39 @@ namespace Test_game
             StartNewGame();
         }
 
-        private void LoadAllAssets()
+        // Обработка кликов мыши для интерфейса настроек
+        protected override void OnMouseDown(MouseEventArgs e)
         {
-            string baseP = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets");
-            mcSprites.LoadSprites(Path.Combine(baseP, "MainCharacter"));
-            npcSprites.LoadSprites(Path.Combine(baseP, "Npc"));
-            for (int i = 0; i < 3; i++)
+            base.OnMouseDown(e);
+            int curW = this.ClientSize.Width;
+            int curH = this.ClientSize.Height;
+
+            // Клик по значку "~" (правый верхний угол)
+            if (e.X > curW - 50 && e.X < curW - 10 && e.Y > 10 && e.Y < 50)
             {
-                enemyTypeSprites[i] = new SpriteManager();
-                enemyTypeSprites[i].LoadSprites(Path.Combine(baseP, "Enemies", $"Type {i + 1}"));
+                if (!showSettingsWindow) { tempP = PlayerSpeed; tempE = EnemySpeed; }
+                showSettingsWindow = !showSettingsWindow;
+                return;
             }
-            // Загрузка текстур сфер p1, p2, p3
-            string itemPath = Path.Combine(baseP, "item");
-            for (int i = 1; i <= 3; i++)
+
+            if (showSettingsWindow)
             {
-                string f = Path.Combine(itemPath, $"p{i}.png");
-                if (File.Exists(f)) itemTextures.Add(Image.FromFile(f));
+                int cX = curW / 2; int cY = curH / 2;
+                // Кнопки Player Speed
+                if (new Rectangle(cX + 40, cY - 45, 30, 30).Contains(e.Location)) tempP = Math.Max(1, tempP - 0.5f);
+                if (new Rectangle(cX + 80, cY - 45, 30, 30).Contains(e.Location)) tempP = Math.Min(15, tempP + 0.5f);
+
+                // Кнопки Enemy Speed
+                if (new Rectangle(cX + 40, cY + 5, 30, 30).Contains(e.Location)) tempE = Math.Max(0.5f, tempE - 0.2f);
+                if (new Rectangle(cX + 80, cY + 5, 30, 30).Contains(e.Location)) tempE = Math.Min(10, tempE + 0.2f);
+
+                // Кнопка APPLY
+                if (new Rectangle(cX - 50, cY + 60, 100, 35).Contains(e.Location))
+                {
+                    PlayerSpeed = tempP;
+                    EnemySpeed = tempE;
+                    showSettingsWindow = false;
+                }
             }
         }
 
@@ -130,7 +155,7 @@ namespace Test_game
 
         private void StartNewGame()
         {
-            gameTimer.Stop(); pressedKeys.Clear(); collectedCount = 0; isQuestAccepted = false; showDialogue = false;
+            gameTimer.Stop(); pressedKeys.Clear(); collectedCount = 0; isQuestAccepted = false; showDialogue = false; showSettingsWindow = false;
             worldX = 1; worldY = 1; playerPos = new PointF(WinW / 2 - PlayerSize / 2, WinH / 2 - PlayerSize / 2);
             btnRetry.Visible = btnExit.Visible = false; currentState = GameState.Playing;
             SetupWorldLayout(); this.Focus(); gameTimer.Start();
@@ -147,34 +172,23 @@ namespace Test_game
 
             int cT = 120, cB = 300, vL = 250, vR = 550, pW = 300, gT = 200, gB = 400;
 
-            // S1-S3
             world[0, 0].Walls.Add(new Rectangle(0, 0, WinW, cT)); world[0, 0].Walls.Add(new Rectangle(0, 0, 60, WinH)); world[0, 0].Walls.Add(new Rectangle(pW, cB, WinW - pW, WinH - cB));
             AddEnemy(world[0, 0], 200, 200); AddItem(world[0, 0], 120, 180);
-
             world[1, 0].Walls.Add(new Rectangle(0, 0, WinW, cT)); world[1, 0].Walls.Add(new Rectangle(0, cB, vL, WinH - cB)); world[1, 0].Walls.Add(new Rectangle(vR, cB, WinW - vR, WinH - cB));
             AddEnemy(world[1, 0], WinW / 2 + 100, cT + 80); AddItem(world[1, 0], WinW / 2 - ItemSize / 2, cT + 20);
-
             world[2, 0].Walls.Add(new Rectangle(0, 0, WinW, cT)); world[2, 0].Walls.Add(new Rectangle(WinW - 60, 0, 60, WinH)); world[2, 0].Walls.Add(new Rectangle(0, cB, 500, WinH - cB));
             AddEnemy(world[2, 0], WinW - 240, 200); AddItem(world[2, 0], WinW - 150, 180);
-
-            // S4-S6
             world[0, 1].Walls.Add(new Rectangle(0, 0, 60, WinH)); world[0, 1].Walls.Add(new Rectangle(pW, 0, WinW - pW, gT)); world[0, 1].Walls.Add(new Rectangle(pW, gB, WinW - pW, WinH - gB));
             AddEnemy(world[0, 1], 400, WinH / 2); AddItem(world[0, 1], 120, WinH / 2);
-
             world[1, 1].Walls.Add(new Rectangle(0, 0, vL, gT)); world[1, 1].Walls.Add(new Rectangle(vR, 0, WinW - vR, gT)); world[1, 1].Walls.Add(new Rectangle(vR, gB, WinW - vR, WinH - gB));
             world[1, 1].Walls.Add(new Rectangle(0, 550, vL, 50)); world[1, 1].Walls.Add(new Rectangle(0, gB, 60, 150));
             world[1, 1].NPCs.Add(new PointF(150, 460));
-
             world[2, 1].Walls.Add(new Rectangle(WinW - 60, 0, 60, WinH)); world[2, 1].Walls.Add(new Rectangle(0, 0, 500, gT)); world[2, 1].Walls.Add(new Rectangle(0, gB, 500, WinH - gB));
             AddEnemy(world[2, 1], WinW - 450, WinH / 2); AddItem(world[2, 1], WinW - 200, WinH / 2);
-
-            // S7-S9
             world[0, 2].Walls.Add(new Rectangle(0, WinH - cT, WinW, cT)); world[0, 2].Walls.Add(new Rectangle(0, 0, 60, WinH)); world[0, 2].Walls.Add(new Rectangle(pW, 0, WinW - pW, cB));
             AddEnemy(world[0, 2], 200, WinH - 250); AddItem(world[0, 2], 120, WinH - 200);
-
             world[1, 2].Walls.Add(new Rectangle(0, WinH - cT, WinW, cT)); world[1, 2].Walls.Add(new Rectangle(0, 0, vL, cB)); world[1, 2].Walls.Add(new Rectangle(vR, 0, WinW - vR, cB));
             AddEnemy(world[1, 2], WinW / 2 - 150, WinH - 250); AddItem(world[1, 2], WinW / 2 - ItemSize / 2, WinH - 200);
-
             world[2, 2].Walls.Add(new Rectangle(0, WinH - cT, WinW, cT)); world[2, 2].Walls.Add(new Rectangle(WinW - 60, 0, 60, WinH)); world[2, 2].Walls.Add(new Rectangle(0, 0, 500, cB));
             AddEnemy(world[2, 2], WinW - 240, WinH - 250); AddItem(world[2, 2], WinW - 150, WinH - 200);
         }
@@ -188,7 +202,7 @@ namespace Test_game
         private void AddItem(Room r, int x, int y)
         {
             r.Items.Add(new Rectangle(x, y, ItemSize, ItemSize));
-            r.ItemTextureIndices.Add(rnd.Next(0, 3)); // Случайный цвет сферы (p1, p2 или p3)
+            r.ItemTextureIndices.Add(rnd.Next(0, 3));
         }
 
         private void GameLoop(object? sender, EventArgs e)
@@ -258,12 +272,7 @@ namespace Test_game
             if (!isQuestAccepted) return;
             var room = world[worldX, worldY];
             for (int i = room.Items.Count - 1; i >= 0; i--)
-                if (new RectangleF(playerPos.X, playerPos.Y, PlayerSize, PlayerSize).IntersectsWith(room.Items[i]))
-                {
-                    room.Items.RemoveAt(i);
-                    room.ItemTextureIndices.RemoveAt(i);
-                    collectedCount++;
-                }
+                if (new RectangleF(playerPos.X, playerPos.Y, PlayerSize, PlayerSize).IntersectsWith(room.Items[i])) { room.Items.RemoveAt(i); room.ItemTextureIndices.RemoveAt(i); collectedCount++; }
         }
 
         private bool IsBoxCollidingInRoom(float x, float y, float w, float h, int rx, int ry)
@@ -280,10 +289,12 @@ namespace Test_game
         {
             Graphics g = e.Graphics; g.Clear(Color.FromArgb(30, 30, 30));
             float gPX = worldX * WinW + playerPos.X, gPY = worldY * WinH + playerPos.Y;
+            int curW = this.ClientSize.Width, curH = this.ClientSize.Height;
+
             if (showMapView)
             {
-                float camX = Math.Clamp(gPX - this.ClientSize.Width / 2, 0, WinW * 3 - this.ClientSize.Width);
-                float camY = Math.Clamp(gPY - this.ClientSize.Height / 2, 0, WinH * 3 - this.ClientSize.Height);
+                float camX = Math.Clamp(gPX - curW / 2, 0, WinW * 3 - curW);
+                float camY = Math.Clamp(gPY - curH / 2, 0, WinH * 3 - curH);
                 g.TranslateTransform(-camX, -camY);
                 for (int y = 0; y < 3; y++) for (int x = 0; x < 3; x++) DrawRoom(g, world[x, y], x * WinW, y * WinH);
                 mcSprites.DrawCharacter(g, gPX, gPY, PlayerSize, PlayerSize, playerFacing, isMoving, pColor, 8);
@@ -294,22 +305,51 @@ namespace Test_game
                 DrawRoom(g, world[worldX, worldY], 0, 0);
                 mcSprites.DrawCharacter(g, playerPos.X, playerPos.Y, PlayerSize, PlayerSize, playerFacing, isMoving, pColor, 8);
             }
+
             if (currentState == GameState.Playing)
             {
-                string goal = isQuestAccepted ? (collectedCount < totalItems ? $"Spheres: {collectedCount}/{totalItems}" : "GOAL: RETURN TO NPC!") : "FIND THE NPC TO START";
-                g.DrawString(goal, new Font("Arial", 12, FontStyle.Bold), isQuestAccepted ? Brushes.White : Brushes.Gold, 10, 10);
+                string gTxt = isQuestAccepted ? (collectedCount < totalItems ? $"Spheres: {collectedCount}/{totalItems}" : "GOAL: RETURN TO NPC!") : "FIND THE NPC TO START";
+                g.DrawString(gTxt, new Font("Arial", 12, FontStyle.Bold), Brushes.White, 10, 10);
                 g.DrawString("Press [I] for Info | [F] for Map", new Font("Arial", 10), Brushes.LightGray, 10, 30);
+
+                // Значок ~ (в правом углу текущего окна)
+                g.FillEllipse(Brushes.DimGray, curW - 50, 10, 40, 40);
+                g.DrawString("~", new Font("Arial", 20, FontStyle.Bold), Brushes.White, curW - 42, 10);
+
+                if (showSettingsWindow)
+                {
+                    int cX = curW / 2; int cY = curH / 2;
+                    g.FillRectangle(new SolidBrush(Color.FromArgb(240, 10, 10, 10)), cX - 150, cY - 120, 300, 240);
+                    g.DrawRectangle(Pens.White, cX - 150, cY - 120, 300, 240);
+                    g.DrawString("SETTINGS", new Font("Arial", 14, FontStyle.Bold), Brushes.Gold, cX - 55, cY - 110);
+                    g.DrawString($"Player Speed: {tempP:F1}", new Font("Arial", 10), Brushes.White, cX - 130, cY - 40);
+                    g.FillRectangle(Brushes.Gray, cX + 40, cY - 45, 30, 30); g.DrawString("-", new Font("Arial", 14), Brushes.White, cX + 48, cY - 42);
+                    g.FillRectangle(Brushes.Gray, cX + 80, cY - 45, 30, 30); g.DrawString("+", new Font("Arial", 14), Brushes.White, cX + 86, cY - 42);
+                    g.DrawString($"Enemy Speed: {tempE:F1}", new Font("Arial", 10), Brushes.White, cX - 130, cY + 10);
+                    g.FillRectangle(Brushes.Gray, cX + 40, cY + 5, 30, 30); g.DrawString("-", new Font("Arial", 14), Brushes.White, cX + 48, cY + 8);
+                    g.FillRectangle(Brushes.Gray, cX + 80, cY + 5, 30, 30); g.DrawString("+", new Font("Arial", 14), Brushes.White, cX + 86, cY + 8);
+                    g.FillRectangle(Brushes.DarkOliveGreen, cX - 50, cY + 60, 100, 35); g.DrawString("APPLY", new Font("Arial", 10, FontStyle.Bold), Brushes.White, cX - 25, cY + 68);
+                }
                 if (showInfoWindow)
                 {
-                    int cX = this.ClientSize.Width / 2, cY = this.ClientSize.Height / 2; g.FillRectangle(new SolidBrush(Color.FromArgb(220, 0, 0, 0)), cX - 200, cY - 150, 400, 300);
+                    int cX = curW / 2, cY = curH / 2; g.FillRectangle(new SolidBrush(Color.FromArgb(220, 0, 0, 0)), cX - 200, cY - 150, 400, 300);
                     g.DrawString("CONTROLS\n\nWASD - Move\nE - Interact\nQ - Exit\nR - Restart\nI - Info\nF - Map", new Font("Consolas", 12, FontStyle.Bold), Brushes.White, cX - 180, cY - 130);
                 }
             }
             else
             {
-                g.FillRectangle(new SolidBrush(Color.FromArgb(180, 0, 0, 0)), 0, 0, this.ClientSize.Width, this.ClientSize.Height);
-                string m = currentState == GameState.Won ? "VICTORY!" : "DEFEAT"; g.DrawString(m, new Font("Arial", 45, FontStyle.Bold), currentState == GameState.Won ? Brushes.Gold : Brushes.Red, this.ClientSize.Width / 2 - 130, this.ClientSize.Height / 2 - 60);
+                g.FillRectangle(new SolidBrush(Color.FromArgb(180, 0, 0, 0)), 0, 0, curW, curH);
+                string m = currentState == GameState.Won ? "VICTORY!" : "DEFEAT"; g.DrawString(m, new Font("Arial", 45, FontStyle.Bold), currentState == GameState.Won ? Brushes.Gold : Brushes.Red, curW / 2 - 130, curH / 2 - 60);
             }
+        }
+
+        private void LoadAllAssets()
+        {
+            string baseP = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets");
+            mcSprites.LoadSprites(Path.Combine(baseP, "MainCharacter"));
+            npcSprites.LoadSprites(Path.Combine(baseP, "Npc"));
+            for (int i = 0; i < 3; i++) { enemyTypeSprites[i] = new SpriteManager(); enemyTypeSprites[i].LoadSprites(Path.Combine(baseP, "Enemies", $"Type {i + 1}")); }
+            string iP = Path.Combine(baseP, "item"); for (int i = 1; i <= 3; i++) { string f = Path.Combine(iP, $"p{i}.png"); if (File.Exists(f)) itemTextures.Add(Image.FromFile(f)); }
         }
 
         private void DrawRoom(Graphics g, Room r, int ox, int oy)
@@ -317,23 +357,14 @@ namespace Test_game
             foreach (var w in r.Walls) g.FillRectangle(Brushes.Black, ox + w.X, oy + w.Y, w.Width, w.Height);
             for (int i = 0; i < r.Items.Count; i++)
             {
-                int texIdx = r.ItemTextureIndices[i];
-                if (itemTextures.Count > texIdx)
-                    g.DrawImage(itemTextures[texIdx], ox + r.Items[i].X, oy + r.Items[i].Y, ItemSize, ItemSize);
-                else
-                    using (SolidBrush ib = new SolidBrush(iColor)) g.FillRectangle(ib, ox + r.Items[i].X, oy + r.Items[i].Y, ItemSize, ItemSize);
+                if (itemTextures.Count > r.ItemTextureIndices[i]) g.DrawImage(itemTextures[r.ItemTextureIndices[i]], ox + r.Items[i].X, oy + r.Items[i].Y, ItemSize, ItemSize);
+                else using (SolidBrush ib = new SolidBrush(iColor)) g.FillRectangle(ib, ox + r.Items[i].X, oy + r.Items[i].Y, ItemSize, ItemSize);
             }
-
             for (int i = 0; i < r.Enemies.Count; i++) enemyTypeSprites[r.EnemyType].DrawCharacter(g, ox + r.Enemies[i].X, oy + r.Enemies[i].Y, EnemySize, EnemySize, r.EnemyDirs[i], true, eColor, 20);
             foreach (var npc in r.NPCs)
             {
-                string npcDir = "down";
-                if (worldX == 1 && worldY == 1)
-                {
-                    float dx = playerPos.X - npc.X, dy = playerPos.Y - npc.Y;
-                    npcDir = Math.Abs(dx) > Math.Abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
-                }
-                npcSprites.DrawCharacter(g, ox + npc.X, oy + npc.Y, PlayerSize, PlayerSize, npcDir, false, nColor, 8);
+                string nD = "down"; if (worldX == 1 && worldY == 1) { float dx = playerPos.X - npc.X, dy = playerPos.Y - npc.Y; nD = Math.Abs(dx) > Math.Abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"); }
+                npcSprites.DrawCharacter(g, ox + npc.X, oy + npc.Y, PlayerSize, PlayerSize, nD, false, nColor, 8);
                 if (!isQuestAccepted) g.DrawString("!", new Font("Arial", 14, FontStyle.Bold), Brushes.Yellow, ox + npc.X + 8, oy + npc.Y - 25);
                 if (showDialogue && isQuestAccepted && collectedCount < totalItems) g.DrawString("Collect 8 spheres!", new Font("Arial", 9, FontStyle.Bold), Brushes.White, ox + npc.X - 30, oy + npc.Y - 20);
                 else if (collectedCount == totalItems) g.DrawString("Press [E] to finish!", new Font("Arial", 9, FontStyle.Bold), Brushes.Gold, ox + npc.X - 30, oy + npc.Y - 20);
